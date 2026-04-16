@@ -1,0 +1,26 @@
+# filepath: chroma-ui/docker-compose.yaml
+services:
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    volumes:
+      - ./chroma-data:/data
+    ports:
+      - "8000:8000"
+    platform: linux/amd64
+    restart: unless-stopped
+
+  chroma-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chroma-admin-ui
+    ports:
+      - "8502:8502"
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    depends_on:
+      - chromadb
