@@ -290,8 +290,7 @@ docker compose up --build -d
 Then open [http://localhost:8502](http://localhost:8502)
 
 **Features:**
-- List, create, and delete collections
-- View collection info and sample data
-- Add vectors with embeddings, metadata, documents
-- Query with filters and distance metrics
-- Delete data by ID or filter
+- **Settings** - Configure HNSW parameters (space, construction_ef, search_ef), view collection metadata and data preview
+- **Upload Data** - Three input methods: Manual Entry, JSON File, CSV File with column mapping
+- **Search** - Similarity search with configurable dimension, results count, metadata/document filters, and similarity percentage
+- **Manage** - View all data in tabular format, delete by ID/filter/all, download CSV, delete entire collection

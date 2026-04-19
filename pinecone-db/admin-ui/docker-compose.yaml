@@ -1,0 +1,43 @@
+# filepath: docker-compose.yaml
+services:
+  pinecone-local:
+    image: ghcr.io/pinecone-io/pinecone-local:latest
+    container_name: pinecone-local
+    environment:
+      PORT: 5080
+    ports:
+      - "5080-5090:5080-5090"
+    volumes:
+      - /Users/vinitchauhan/AI-Workspace/pinecone-db-data:/data
+    platform: linux/amd64
+    restart: unless-stopped
+
+  pinecone-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pinecone-backend
+    ports:
+      - "8002:8002"
+    environment:
+      - PINECONE_API_KEY=pclocal
+      - PINECONE_HOST=http://pinecone-local:5080
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on:
+      - pinecone-local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  pinecone-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pinecone-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8002/api/v1
+    depends_on:
+      - pinecone-backend
+    restart: unless-stopped

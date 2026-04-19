@@ -1,0 +1,44 @@
+/* filepath: frontend/src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 40% 2%;
+  --foreground: 210 40% 98%;
+  --card: 210 40% 4%;
+  --card-foreground: 210 40% 98%;
+  --popover: 210 40% 4%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 12%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 210 40% 8%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 210 40% 12%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 210 40% 10%;
+  --input: 210 40% 10%;
+  --ring: 199 89% 48%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

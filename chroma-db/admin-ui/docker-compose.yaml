@@ -1,0 +1,52 @@
+# filepath: docker-compose.yaml
+version: "3.8"
+
+services:
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    container_name: chromadb
+    volumes:
+      - /Users/vinitchauhan/AI-Workspace/chroma-db-data:/data
+    ports:
+      - "8000:8000"
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      - IS_PERSIST=TRUE
+      - PERSIST_DIRECTORY=/data
+      - ANONYMIZED_TELEMETRY=FALSE
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chroma-admin-backend
+    ports:
+      - "8001:8001"
+    environment:
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - LOG_LEVEL=INFO
+      - DEFAULT_EMBEDDING_FUNCTION=ollama
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=nomic-embed-text
+    depends_on:
+      - chromadb
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chroma-admin-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8001/api/v1
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  default:
+    name: chroma-network
