@@ -16,22 +16,36 @@ class ChromaClient:
         self.ssl = ssl
         self._client: Optional[chromadb.HttpClient] = None
     
-    def connect(self) -> chromadb.HttpClient:
-        """Connect to ChromaDB"""
+    def connect(self, max_retries: int = 10, delay: int = 3) -> chromadb.HttpClient:
+        """Connect to ChromaDB with retry logic"""
+        import time
         if self._client is None:
-            # Create client with settings to avoid early validation
             settings = ChromaSettings(
                 anonymized_telemetry=False,
                 allow_reset=True
             )
-            self._client = chromadb.HttpClient(
-                host=self.host,
-                port=self.port,
-                ssl=self.ssl,
-                settings=settings
-            )
-            logger.info(f"Connected to ChromaDB at {self.host}:{self.port}")
+            
+            for attempt in range(1, max_retries + 1):
+                try:
+                    client = chromadb.HttpClient(
+                        host=self.host,
+                        port=self.port,
+                        ssl=self.ssl,
+                        settings=settings
+                    )
+                    # Verify connection with heartbeat
+                    client.heartbeat()
+                    self._client = client
+                    logger.info(f"Successfully connected to ChromaDB at {self.host}:{self.port}")
+                    return self._client
+                except Exception as e:
+                    if attempt == max_retries:
+                        logger.error(f"Failed to connect to ChromaDB after {max_retries} attempts: {e}")
+                        raise e
+                    logger.warning(f"Connection attempt {attempt}/{max_retries} failed: {e}. Retrying in {delay}s...")
+                    time.sleep(delay)
         return self._client
+Line: 34, Instruction: Update connect and return.
     
     @property
     def client(self) -> chromadb.HttpClient:

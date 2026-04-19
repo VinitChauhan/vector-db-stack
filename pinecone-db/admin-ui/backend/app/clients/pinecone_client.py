@@ -12,16 +12,23 @@ class PineconeClient:
         self.host = host
         self.pc = None
         
-    def connect(self):
-        """Initialize high-level Pinecone client"""
-        try:
-            # For pinecone-local emulator, we pass the host
-            self.pc = Pinecone(api_key=self.api_key, host=self.host)
-            logger.info(f"Connected to Pinecone at {self.host}")
-            return self.pc
-        except Exception as e:
-            logger.error(f"Failed to connect to Pinecone: {e}")
-            raise e
+    def connect(self, max_retries: int = 10, delay: int = 3):
+        """Initialize high-level Pinecone client with retry logic"""
+        import time
+        for attempt in range(1, max_retries + 1):
+            try:
+                # For pinecone-local emulator, we pass the host
+                self.pc = Pinecone(api_key=self.api_key, host=self.host)
+                # Verify connection with a simple call
+                self.pc.list_indexes()
+                logger.info(f"Successfully connected to Pinecone at {self.host}")
+                return self.pc
+            except Exception as e:
+                if attempt == max_retries:
+                    logger.error(f"Failed to connect to Pinecone after {max_retries} attempts: {e}")
+                    raise e
+                logger.warning(f"Connection attempt {attempt}/{max_retries} failed: {e}. Retrying in {delay}s...")
+                time.sleep(delay)
 
     def list_indexes(self):
         return self.pc.list_indexes()
