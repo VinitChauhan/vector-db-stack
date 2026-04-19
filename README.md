@@ -1,296 +1,100 @@
 # Vector DB Stack
 
-Local vector database stack for development and testing.
+Local vector database stack for development and testing, featuring premium administrative interfaces for both Pinecone and ChromaDB.
 
 ## Project Structure
 
 ```
 vector-db-stack/
-├── pinecone-db/          # Pinecone Local + Admin UI
-│   ├── Dockerfile
-│   ├── docker-compose.yaml
-│   └── pinecone_admin_ui.py
-├── chroma-db/            # ChromaDB + Admin UI
-│   ├── Dockerfile
-│   ├── docker-compose.yaml
-│   └── chroma_admin_ui.py
+├── pinecone-db/
+│   └── admin-ui/           # Next.js + FastAPI Admin Suite
+├── chroma-db/
+│   └── admin-ui/           # Next.js + FastAPI Admin Suite
 └── README.md
 ```
 
-## Services
+## Services Summary
 
-### Pinecone Local
+| Service | Port | Native API | Admin UI (Port) | Tech Stack |
+|---------|------|------------|-----------------|------------|
+| **Pinecone Local** | 5080 | http://localhost:5080 | [3001](http://localhost:3001) | Next.js + FastAPI |
+| **ChromaDB** | 8000 | http://localhost:8000 | [3000](http://localhost:3000) | Next.js + FastAPI |
 
-In-memory Pinecone emulator for local development.
+---
 
-| Service | Port | Image |
-|---------|------|-------|
-| Pinecone Local | 5080 | `ghcr.io/pinecone-io/pinecone-local:latest` |
-| Admin UI | 8501 | Streamlit |
+## Pinecone Local Stack
 
-**Port range:** 5080-5090 (indexes use ports 5081+)
+A high-performance emulation of Pinecone for local development, featuring a glassmorphic administrative interface.
 
-### ChromaDB
+### Features
+- **Local Persistence**: Data is saved to `~/AI-Workspace/pinecone-db-data`.
+- **Index Management**: Create, list, describe, and delete indexes visually.
+- **Vector Explorer**: Advanced UI for upserting, fetching, and querying vectors.
+- **RAG Integration**: Built-in support for Ollama (`nomic-embed-text`) to perform natural language semantic queries.
 
-Open-source vector database for embeddings.
-
-| Service | Port | Image |
-|---------|------|-------|
-| ChromaDB | 8000 | `chromadb/chroma:latest` |
-| Admin UI | 8502 | Streamlit |
-
-**Data directory:** `./chroma-data` (persists on host)
-
-## Quick Start
-
-### Pinecone Local (with Admin UI)
-
+### Quick Start
 ```bash
-cd pinecone-db
-docker compose up -d
+cd pinecone-db/admin-ui
+docker compose up --build -d
+```
+- **Admin UI**: [http://localhost:3001](http://localhost:3001)
+- **Backend API**: [http://localhost:8002/api/v1](http://localhost:8002/api/v1)
+
+---
+
+## ChromaDB Stack
+
+A robust setup for ChromaDB with a modern administrative suite for collection and document management.
+
+### Features
+- **Settings**: Configure HNSW parameters (space, ef_construction) and view metadata.
+- **Data Upload**: Support for manual entry, JSON, and CSV uploads with column mapping.
+- **Smart Search**: Similarity search with metadata/document filters.
+- **Data Management**: Tabular view, CSV export, and bulk deletion.
+
+### Quick Start
+```bash
+cd chroma-db/admin-ui
+docker compose up --build -d
+```
+- **Admin UI**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:8001/api/v1](http://localhost:8001/api/v1)
+
+---
+
+## 🛠 Prerequisites
+
+- **Docker & Docker Compose**: Required to run the containers.
+- **Ollama**: Recommended for local embedding generation.
+  - Run `ollama pull nomic-embed-text` for the default embedding model.
+
+## Python Client Example (Pinecone)
+
+```python
+from pinecone import Pinecone
+
+pc = Pinecone(api_key="pclocal", host="http://localhost:5080")
+index = pc.Index(name="my-index") # Ensure index exists first
+
+index.upsert(vectors=[
+    {"id": "v1", "values": [0.1, 0.2, ...], "metadata": {"tag": "test"}}
+])
 ```
 
-- **API:** http://localhost:5080
-- **Admin UI:** http://localhost:8501
-
-### ChromaDB (with Admin UI)
+## Maintenance
 
 ```bash
-cd chroma-db
-docker compose up -d
-```
-
-- **API:** http://localhost:8000
-- **Admin UI:** http://localhost:8502
-
-### Common Commands
-
-```bash
-# Check status
+# View all running services
 docker compose ps
 
-# View logs
-docker compose logs -f
-
-# Stop services
+# Stop all services
 docker compose down
-```
 
-## Configuration
-
-### Pinecone Local (Database Emulator)
-
-```yaml
-services:
-  pinecone-local:
-    image: ghcr.io/pinecone-io/pinecone-local:latest
-    environment:
-      PORT: 5080
-      PINECONE_HOST: localhost
-    ports:
-      - "5080-5090:5080-5090"
-    platform: linux/amd64
-```
-
-## Python Client Example
-
-```python
-from pinecone import Pinecone, ServerlessSpec
-
-# Connect to Pinecone Local
-pc = Pinecone(
-    api_key="pclocal",  # any value works
-    host="http://localhost:5080"
-)
-
-# Create two indexes, one dense and one sparse
-dense_index_name = "dense-index"
-sparse_index_name = "sparse-index"
-
-if not pc.has_index(dense_index_name):
-    dense_index_model = pc.create_index(
-        name=dense_index_name,
-        vector_type="dense",
-        dimension=2,
-        metric="cosine",
-        spec=ServerlessSpec(cloud="aws", region="us-east-1"),
-        deletion_protection="disabled",
-        tags={"environment": "development"}
-    )
-    print("Dense index created:", dense_index_model)
-
-if not pc.has_index(sparse_index_name):
-    sparse_index_model = pc.create_index(
-        name=sparse_index_name,
-        vector_type="sparse",
-        metric="dotproduct",
-        spec=ServerlessSpec(cloud="aws", region="us-east-1"),
-        deletion_protection="disabled",
-        tags={"environment": "development"}
-    )
-    print("Sparse index created:", sparse_index_model)
-
-# Target each index
-dense_index_host = pc.describe_index(name=dense_index_name).host
-dense_index = pc.Index(host=dense_index_host)
-sparse_index_host = pc.describe_index(name=sparse_index_name).host
-sparse_index = pc.Index(host=sparse_index_host)
-
-# Upsert records into the dense index
-dense_index.upsert(
-    vectors=[
-        {"id": "vec1", "values": [1.0, -2.5], "metadata": {"genre": "drama"}},
-        {"id": "vec2", "values": [3.0, -2.0], "metadata": {"genre": "documentary"}},
-        {"id": "vec3", "values": [0.5, -1.5], "metadata": {"genre": "documentary"}}
-    ],
-    namespace="example-namespace"
-)
-
-# Upsert records into the sparse index
-sparse_index.upsert(
-    namespace="example-namespace",
-    vectors=[
-        {
-            "id": "vec1",
-            "sparse_values": {
-                "values": [1.79, 0.41, 2.82, 2.80, 2.86, 1.65, 5.36, 1.30],
-                "indices": [822745112, 1009084850, 1221765879, 1408993850, 1504846510, 1596856843, 1640781426, 1656251611]
-            },
-            "metadata": {"chunk_text": "Sample text 1", "category": "tech", "quarter": "Q3"}
-        },
-        {
-            "id": "vec2",
-            "sparse_values": {
-                "values": [0.43, 3.34, 2.77, 3.02, 3.31, 5.60, 2.48, 0.38],
-                "indices": [131900689, 592326839, 710158994, 838729363, 1304885087, 1640781426, 1690623792, 1807131503]
-            },
-            "metadata": {"chunk_text": "Sample text 2", "category": "tech", "quarter": "Q4"}
-        }
-    ]
-)
-
-# Check the number of records in each index
-print("\nDense index stats:", dense_index.describe_index_stats())
-print("Sparse index stats:", sparse_index.describe_index_stats())
-
-# Query the dense index with a metadata filter
-dense_response = dense_index.query(
-    namespace="example-namespace",
-    vector=[3.0, -2.0],
-    filter={"genre": {"$eq": "documentary"}},
-    top_k=1,
-    include_values=False,
-    include_metadata=True
-)
-print("\nDense query response:", dense_response)
-
-# Query the sparse index with a metadata filter
-sparse_response = sparse_index.query(
-    namespace="example-namespace",
-    sparse_vector={
-        "values": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        "indices": [767227209, 1640781426, 1690623792, 2021799277, 2152645940, 2295025838, 2443437770, 2779594451]
-    },
-    filter={"quarter": {"$eq": "Q4"}},
-    top_k=1,
-    include_values=False,
-    include_metadata=True
-)
-print("Sparse query response:", sparse_response)
-
-# Delete the indexes when done
-pc.delete_index(name=dense_index_name)
-pc.delete_index(name=sparse_index_name)
-```
-
-## ChromaDB Client Example
-
-```python
-import chromadb
-
-# Connect to ChromaDB running in Docker
-chroma_client = chromadb.HttpClient(host='localhost', port=8000)
-
-# Verify connection
-chroma_client.heartbeat()
-
-# Create a collection
-collection = chroma_client.create_collection(name="my-collection")
-
-# Add embeddings
-collection.add(
-    ids=["id1", "id2", "id3"],
-    embeddings=[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
-    metadatas=[{"source": "doc1"}, {"source": "doc2"}, {"source": "doc3"}],
-    documents=["Document 1 text", "Document 2 text", "Document 3 text"]
-)
-
-# Query the collection
-results = collection.query(
-    query_embeddings=[[1.0, 2.0, 3.0]],
-    n_results=2
-)
-
-print(results)
+# Rebuild if you make changes
+docker compose up --build -d
 ```
 
 ## Limitations
 
-### Pinecone Local
-
-- **In-memory only** — Data does not persist after container stops
-- **API version** — Uses `2025-01` (not latest stable)
-- **No authentication** — API keys are ignored
-- **Max records** — 100,000 per index
-- **Not for production**
-
-### ChromaDB
-
-- **Single node** — Default config is single-node only
-- **Development use** — Not recommended for high-scale production
-
-## Moving to Production
-
-1. Update client to use your Pinecone API key
-2. Target your cloud indexes (e.g., `https://index-name-xxx.svc.us-east-1-aws.pinecone.io`)
-3. Use [import feature](https://docs.pinecone.io/guides/index-data/import-data) for large datasets
-
-## Resources
-
-- [Pinecone Local Docs](https://docs.pinecone.io/guides/operations/local-development)
-- [Pinecone Python SDK](https://docs.pinecone.io/reference/sdks/python/overview)
-
-## Admin UI
-
-### Pinecone Local (Streamlit)
-
-A web-based admin UI for managing Pinecone Local indexes:
-
-#### Run with Docker
-```bash
-cd pinecone-db
-docker compose up --build -d
-```
-Then open [http://localhost:8501](http://localhost:8501)
-
-**Features:**
-- List, create, and delete indexes
-- View index stats and configuration
-- Upsert vectors with metadata
-- Query vectors with filters
-- Namespace support
-
-### ChromaDB Admin UI (Streamlit)
-
-#### Run with Docker
-```bash
-cd chroma-db
-docker compose up --build -d
-```
-Then open [http://localhost:8502](http://localhost:8502)
-
-**Features:**
-- **Settings** - Configure HNSW parameters (space, construction_ef, search_ef), view collection metadata and data preview
-- **Upload Data** - Three input methods: Manual Entry, JSON File, CSV File with column mapping
-- **Search** - Similarity search with configurable dimension, results count, metadata/document filters, and similarity percentage
-- **Manage** - View all data in tabular format, delete by ID/filter/all, download CSV, delete entire collection
+- **Pinecone Local**: Uses an in-memory emulator internally, but this stack adds a volume mount for the emulator's data storage to improve persistence across restarts.
+- **Development Only**: Designed for local development, testing, and RAG prototyping.
