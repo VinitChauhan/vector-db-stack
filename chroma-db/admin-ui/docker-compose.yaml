@@ -1,5 +1,5 @@
 # filepath: docker-compose.yaml
-version: "3.8"
+# version: "3.8"
 
 services:
   chromadb:
@@ -15,6 +15,12 @@ services:
       - IS_PERSIST=TRUE
       - PERSIST_DIRECTORY=/data
       - ANONYMIZED_TELEMETRY=FALSE
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "</dev/tcp/localhost/8000"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
     image: ghcr.io/vinitchauhan/chroma-admin-backend:latest
@@ -32,7 +38,8 @@ services:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - OLLAMA_MODEL=nomic-embed-text
     depends_on:
-      - chromadb
+      chromadb:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
