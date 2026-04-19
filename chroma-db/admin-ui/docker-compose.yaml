@@ -3,7 +3,7 @@ version: "3.8"
 
 services:
   chromadb:
-    image: chromadb/chroma:0.5.23
+    image: ghcr.io/chroma-core/chroma:0.5.23
     container_name: chromadb
     volumes:
       - /Users/vinitchauhan/AI-Workspace/chroma-db-data:/data
@@ -17,6 +17,7 @@ services:
       - ANONYMIZED_TELEMETRY=FALSE
 
   backend:
+    image: ghcr.io/vinitchauhan/chroma-admin-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -35,6 +36,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: ghcr.io/vinitchauhan/chroma-admin-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
