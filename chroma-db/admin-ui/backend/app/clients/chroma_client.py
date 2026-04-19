@@ -45,7 +45,7 @@ class ChromaClient:
                     logger.warning(f"Connection attempt {attempt}/{max_retries} failed: {e}. Retrying in {delay}s...")
                     time.sleep(delay)
         return self._client
-Line: 34, Instruction: Update connect and return.
+    
     
     @property
     def client(self) -> chromadb.HttpClient:
